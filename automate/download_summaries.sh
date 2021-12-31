@@ -1,4 +1,10 @@
 #!/bin/bash
 
-cd ~/booksum/scripts/data_collection/$1/
-echo ls
+
+
+for s in bookwolf, cliffnotes, gradesaver, novelguild, pinkmonkey, shmoop, sparknotes, thebestnotes
+do
+   cd ~/booksum/scripts/data_collection/$s/
+   ls
+#   python3 get_summaries.py &
+done
