@@ -2,7 +2,7 @@
 
 
 
-for s in bookwolf, cliffnotes, gradesaver, novelguild, pinkmonkey, shmoop, sparknotes, thebestnotes
+for s in bookwolf cliffnotes gradesaver novelguild pinkmonkey shmoop sparknotes thebestnotes
 do
    cd ~/booksum/scripts/data_collection/$s/
    ls
