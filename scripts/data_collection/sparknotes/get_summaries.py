@@ -23,9 +23,9 @@ from multiprocessing import Pool
 # PARAMS
 SUMMARY_DIR = '../../raw_summaries/sparknotes/summaries'
 # Summary list info
-summary_list_file = "literature_links.tsv.pruned'
+summary_list_file = "literature_links.tsv.pruned"
 
-f_errors = open('section_errors.txt","w")
+f_errors = open("section_errors.txt","w")
 
 def wrap_data(name, summary, analysis, url):
     return {
