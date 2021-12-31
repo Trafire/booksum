@@ -65,82 +65,85 @@ with open(summary_list_file, 'r') as csvfile:
 
 # For each summary info
 for k, (title, page_url) in enumerate(summary_infos):
-    print('\n>>> {}. {} <<<'.format(k, title))
-
-    # Create a directory for the work if needed
-    specific_summary_dir = os.path.join(SUMMARY_DIR, title)
-    if not os.path.exists(specific_summary_dir):
-        os.makedirs(specific_summary_dir)
-    else:
-        print("Found existing directory, skipping.")
-        # continue
-
-    # Parse page
     try:
-        soup = BeautifulSoup(urllib.request.urlopen(page_url), "html.parser")
-    except Exception as e:
-            print (page_url, e)
-            errors_file.write(page_url + "\t" + str(e) + "\n")
-            continue    
+        print('\n>>> {}. {} <<<'.format(k, title))
 
-    # Parse general summary
-    navigation_links = soup.find("section", {"class": "secondary-navigation"})
-    overview_links = [urllib.parse.urljoin(MAIN_SITE, link.get("href")) for link in navigation_links.findAll("a") if re.match(".*book-summary$", link.get("href"))]
-    section_links = [urllib.parse.urljoin(MAIN_SITE, link.get("href")) for link in navigation_links.findAll("a") if "summary-and-analysis" in link.get("href")][1:]
+        # Create a directory for the work if needed
+        specific_summary_dir = os.path.join(SUMMARY_DIR, title)
+        if not os.path.exists(specific_summary_dir):
+            os.makedirs(specific_summary_dir)
+        else:
+            print("Found existing directory, skipping.")
+            # continue
 
-    for index, overview in enumerate(overview_links):
+        # Parse page
         try:
-            soup = BeautifulSoup(urllib.request.urlopen(overview), "html.parser")
-            overview_data = soup.find("article", {"class": "copy"})
-            overview_paragraphs = filter(None, [paragraph.text.strip() for paragraph in overview_data.findAll("p", recursive=False)])
-            overview_text = "<PARAGRAPH>".join(overview_paragraphs).replace("Continued on next page...", "")
-            overview_data = wrap_data("Overview", overview_text, None, overview)
-
-            output_fname = os.path.join(specific_summary_dir, 'overview.txt')
-            with open(output_fname, 'w', encoding="utf-8") as f:
-                f.write(json.dumps(overview_data))
-        except Exception:
-            print("No book summary")
-
-            
-    for index, section in enumerate(section_links):
-        
-
-        try:
-            soup = BeautifulSoup(urllib.request.urlopen(section), "html.parser")
-        except URLError as err:
-            print (err, "Retrying after sleep")
-            time.sleep(10)
-            try:
-                soup = BeautifulSoup(urllib.request.urlopen(section), "html.parser")
-            except Exception as e:
-                print (section, e)
-                errors_file.write(section + "\t" + str(e))
-                errors_file.write("\n")
+            soup = BeautifulSoup(urllib.request.urlopen(page_url), "html.parser")
+        except Exception as e:
+                print (page_url, e)
+                errors_file.write(page_url + "\t" + str(e) + "\n")
                 continue
 
-        except Exception as e:
-            print (section, e)
-            errors_file.write(section + "\t" + str(e) + "\n")
-            continue
+        # Parse general summary
+        navigation_links = soup.find("section", {"class": "secondary-navigation"})
+        overview_links = [urllib.parse.urljoin(MAIN_SITE, link.get("href")) for link in navigation_links.findAll("a") if re.match(".*book-summary$", link.get("href"))]
+        section_links = [urllib.parse.urljoin(MAIN_SITE, link.get("href")) for link in navigation_links.findAll("a") if "summary-and-analysis" in link.get("href")][1:]
 
-        section_header = soup.title.string.strip()
+        for index, overview in enumerate(overview_links):
+            try:
+                soup = BeautifulSoup(urllib.request.urlopen(overview), "html.parser")
+                overview_data = soup.find("article", {"class": "copy"})
+                overview_paragraphs = filter(None, [paragraph.text.strip() for paragraph in overview_data.findAll("p", recursive=False)])
+                overview_text = "<PARAGRAPH>".join(overview_paragraphs).replace("Continued on next page...", "")
+                overview_data = wrap_data("Overview", overview_text, None, overview)
 
-        print (section_header, section)
+                output_fname = os.path.join(specific_summary_dir, 'overview.txt')
+                with open(output_fname, 'w', encoding="utf-8") as f:
+                    f.write(json.dumps(overview_data))
+            except Exception:
+                print("No book summary")
 
-        section_paragraphs = list(filter(None, scrape_section_continuation(soup, section_header)))
-        section_text = "<PARAGRAPH>".join(section_paragraphs).replace("Continued on next page...", "")
 
-        # clean up and parse
-        if "Summary\n" in section_text and "Analysis\n" in section_text:
-            section_text_split = section_text.split("Analysis\n")
-            summary_text = "".join([summary for summary in section_text_split if "Summary\n" in summary]).replace("Summary\n", "").strip()
-            analysis_text = "".join([analysis for analysis in section_text_split if "Summary\n" not in analysis]).replace("Analysis\n", "").strip()
-        else:
-            summary_text = section_text.replace("Summary\n", "").strip()
-            analysis_text = None
+        for index, section in enumerate(section_links):
 
-        section_data = wrap_data(section_header, summary_text, analysis_text, section)
-        output_fname = os.path.join(specific_summary_dir, 'section_%d.txt' % index)
-        with open(output_fname, 'w', encoding="utf-8") as f:
-            f.write(json.dumps(section_data))
+
+            try:
+                soup = BeautifulSoup(urllib.request.urlopen(section), "html.parser")
+            except URLError as err:
+                print (err, "Retrying after sleep")
+                time.sleep(10)
+                try:
+                    soup = BeautifulSoup(urllib.request.urlopen(section), "html.parser")
+                except Exception as e:
+                    print (section, e)
+                    errors_file.write(section + "\t" + str(e))
+                    errors_file.write("\n")
+                    continue
+
+            except Exception as e:
+                print (section, e)
+                errors_file.write(section + "\t" + str(e) + "\n")
+                continue
+
+            section_header = soup.title.string.strip()
+
+            print (section_header, section)
+
+            section_paragraphs = list(filter(None, scrape_section_continuation(soup, section_header)))
+            section_text = "<PARAGRAPH>".join(section_paragraphs).replace("Continued on next page...", "")
+
+            # clean up and parse
+            if "Summary\n" in section_text and "Analysis\n" in section_text:
+                section_text_split = section_text.split("Analysis\n")
+                summary_text = "".join([summary for summary in section_text_split if "Summary\n" in summary]).replace("Summary\n", "").strip()
+                analysis_text = "".join([analysis for analysis in section_text_split if "Summary\n" not in analysis]).replace("Analysis\n", "").strip()
+            else:
+                summary_text = section_text.replace("Summary\n", "").strip()
+                analysis_text = None
+
+            section_data = wrap_data(section_header, summary_text, analysis_text, section)
+            output_fname = os.path.join(specific_summary_dir, 'section_%d.txt' % index)
+            with open(output_fname, 'w', encoding="utf-8") as f:
+                f.write(json.dumps(section_data))
+    except:
+        pass
