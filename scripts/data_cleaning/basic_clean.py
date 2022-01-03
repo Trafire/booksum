@@ -32,47 +32,50 @@ for src in sources:
         os.makedirs(dest_dir)
 
     for book in os.listdir(books_dir):
-        
-        book_path = os.path.join(books_dir, book)
-        print (book, "===")     
+        try:
 
-        book_dest = os.path.join(dest_dir, unidecode(book))
-        if not os.path.exists(book_dest):
-            os.makedirs(book_dest)
+            book_path = os.path.join(books_dir, book)
+            print (book, "===")
 
-        for section in os.listdir(book_path):
-            
-            summary_path = os.path.join(book_path, section)
+            book_dest = os.path.join(dest_dir, unidecode(book))
+            if not os.path.exists(book_dest):
+                os.makedirs(book_dest)
 
-            fp = open(summary_path,"r")
+            for section in os.listdir(book_path):
 
-            try:
-                summary_json = json.loads(fp.readlines()[0])
-            except Exception as e:
-                print (book, "=Error reading json==", e, section)
-                f_errors.write(summary_path + str(e) + "\n")
-                continue
+                summary_path = os.path.join(book_path, section)
 
-            #Remove text inside paranthesis
+                fp = open(summary_path,"r")
 
-            if type(summary_json['summary']) is list:
-                summary_json['summary'] = " ".join(summary_json['summary'])
-            summary_json['summary'] = unidecode(summary_json['summary'])
-            summary_json['summary'] = re.sub("[\(\[].*?[\)\]]", "", summary_json['summary'])
+                try:
+                    summary_json = json.loads(fp.readlines()[0])
+                except Exception as e:
+                    print (book, "=Error reading json==", e, section)
+                    f_errors.write(summary_path + str(e) + "\n")
+                    continue
 
-            if 'analysis' in summary_json and summary_json['analysis'] is not None:
-                if type(summary_json['analysis']) is list:
-                    summary_json['analysis'] = " ".join(summary_json['analysis'])
-                summary_json['analysis'] = unidecode(summary_json['analysis'])
-                summary_json['analysis'] = re.sub("[\(\[].*?[\)\]]", "", summary_json['analysis'])
+                #Remove text inside paranthesis
 
-            # Section name remains the same for overview.txt
-            section_out = section
+                if type(summary_json['summary']) is list:
+                    summary_json['summary'] = " ".join(summary_json['summary'])
+                summary_json['summary'] = unidecode(summary_json['summary'])
+                summary_json['summary'] = re.sub("[\(\[].*?[\)\]]", "", summary_json['summary'])
 
-            if '.txt' in section and 'overview' not in section:
-                section_out = section[0:-4] + "_part_0.txt" # add _part_0 to every summary file for splitting operations later
+                if 'analysis' in summary_json and summary_json['analysis'] is not None:
+                    if type(summary_json['analysis']) is list:
+                        summary_json['analysis'] = " ".join(summary_json['analysis'])
+                    summary_json['analysis'] = unidecode(summary_json['analysis'])
+                    summary_json['analysis'] = re.sub("[\(\[].*?[\)\]]", "", summary_json['analysis'])
 
-            book_dest_path = os.path.join(book_dest, section_out)
+                # Section name remains the same for overview.txt
+                section_out = section
 
-            with open(book_dest_path, 'w') as outfile:
-                json.dump(summary_json, outfile)
+                if '.txt' in section and 'overview' not in section:
+                    section_out = section[0:-4] + "_part_0.txt" # add _part_0 to every summary file for splitting operations later
+
+                book_dest_path = os.path.join(book_dest, section_out)
+
+                with open(book_dest_path, 'w') as outfile:
+                    json.dump(summary_json, outfile)
+        except:
+            pass
