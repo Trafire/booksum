@@ -200,85 +200,88 @@ def save_section_para(section_paragraphs, section_titles, section_title_orig, se
 
 # For each summary info
 for k, (title, page_url) in enumerate(summary_infos):
-    print('\n>>> {}. {} - {} <<<'.format(k, title, page_url))
-
-
-    # Create a directory for the work if needed
-    specific_summary_dir = os.path.join(SUMMARY_DIR, title)
-    if not os.path.exists(specific_summary_dir):
-        os.makedirs(specific_summary_dir)
-    else:
-        print("Found existing directory")
-        # continue
-
-    print ("page_url: ", page_url)
-
-    # Parse page
     try:
-        soup = BeautifulSoup(urllib.request.urlopen(page_url), "html.parser")
-    except URLError as err:
-        print (err, page_url, "Retrying after sleep")
-        time.sleep(10)
+        print('\n>>> {}. {} - {} <<<'.format(k, title, page_url))
+
+
+        # Create a directory for the work if needed
+        specific_summary_dir = os.path.join(SUMMARY_DIR, title)
+        if not os.path.exists(specific_summary_dir):
+            os.makedirs(specific_summary_dir)
+        else:
+            print("Found existing directory")
+            # continue
+
+        print ("page_url: ", page_url)
+
+        # Parse page
         try:
             soup = BeautifulSoup(urllib.request.urlopen(page_url), "html.parser")
-        except Exception as e:
-            print (page_url, e)
-            f_errors.write(page_url + "\t" + str(e))
-            f_errors.write("\n")
-            continue
-
-    one_level_up_url = os.path.dirname(page_url) + "/"
-
-    #fetch section
-    section_paragraphs = []
-
-    navigation_links = soup.findAll("a")
-
-    index = -1 # For section numbers
-
-    for link in navigation_links:
-
-        if 'synopsis' in " ".join(link.text.strip().lower().split()):
-            overview = urllib.parse.urljoin(one_level_up_url, link.get("href"))
-            overview_title = link.text.strip().lower()
-            print ("overview: ",overview)
-
-            overview_paragraphs = get_overview_paragraphs(overview)
-
-            overview_text = "<PARAGRAPH>".join(overview_paragraphs)
-
-            overview_dict = {}
-            overview_dict["name"] = "overview"
-            overview_dict["summary"] = overview_text
-            overview_dict["analysis"] = ""
-            overview_dict["url"] = overview
-
-            output_fname = os.path.join(specific_summary_dir, "overview.json")
-            with open(output_fname, 'w', encoding="utf-8") as fp:
-                json.dump(overview_dict, fp)
-
-        else:
-
-            section = urllib.parse.urljoin(one_level_up_url, link.get("href"))
-
-            section_title_orig = " ".join(link.text.strip().lower().split())
-
-            # Keep the original one first in the list of possible titles to match. For chapter numbers like "TWENTY-THREE" and "TWENTY-FOUR", which occur on the same web page.
-            section_titles = [section_title_orig]
-
-            # To handle cases where the og page says Chapter 1 - X, but the summary page just says X
-            # Add the different kind of section titles we can have into a list
-            if ('-' in section_title_orig):
-                section_titles = section_titles + section_title_orig.strip().split('-')
-            elif (':' in section_title_orig):
-                section_titles = section_titles + section_title_orig.strip().split(':')
-
-            if (section_title_orig == ""):
+        except URLError as err:
+            print (err, page_url, "Retrying after sleep")
+            time.sleep(10)
+            try:
+                soup = BeautifulSoup(urllib.request.urlopen(page_url), "html.parser")
+            except Exception as e:
+                print (page_url, e)
+                f_errors.write(page_url + "\t" + str(e))
+                f_errors.write("\n")
                 continue
 
-            section_paragraphs = get_section_paragraphs(section, section_titles, section_title_orig, specific_summary_dir, index)
+        one_level_up_url = os.path.dirname(page_url) + "/"
 
-            if (section_paragraphs != []):
+        #fetch section
+        section_paragraphs = []
 
-                index += 1
-                save_section_para(section_paragraphs, section_titles, section_title_orig, section, specific_summary_dir, index)
+        navigation_links = soup.findAll("a")
+
+        index = -1 # For section numbers
+
+        for link in navigation_links:
+
+            if 'synopsis' in " ".join(link.text.strip().lower().split()):
+                overview = urllib.parse.urljoin(one_level_up_url, link.get("href"))
+                overview_title = link.text.strip().lower()
+                print ("overview: ",overview)
+
+                overview_paragraphs = get_overview_paragraphs(overview)
+
+                overview_text = "<PARAGRAPH>".join(overview_paragraphs)
+
+                overview_dict = {}
+                overview_dict["name"] = "overview"
+                overview_dict["summary"] = overview_text
+                overview_dict["analysis"] = ""
+                overview_dict["url"] = overview
+
+                output_fname = os.path.join(specific_summary_dir, "overview.json")
+                with open(output_fname, 'w', encoding="utf-8") as fp:
+                    json.dump(overview_dict, fp)
+
+            else:
+
+                section = urllib.parse.urljoin(one_level_up_url, link.get("href"))
+
+                section_title_orig = " ".join(link.text.strip().lower().split())
+
+                # Keep the original one first in the list of possible titles to match. For chapter numbers like "TWENTY-THREE" and "TWENTY-FOUR", which occur on the same web page.
+                section_titles = [section_title_orig]
+
+                # To handle cases where the og page says Chapter 1 - X, but the summary page just says X
+                # Add the different kind of section titles we can have into a list
+                if ('-' in section_title_orig):
+                    section_titles = section_titles + section_title_orig.strip().split('-')
+                elif (':' in section_title_orig):
+                    section_titles = section_titles + section_title_orig.strip().split(':')
+
+                if (section_title_orig == ""):
+                    continue
+
+                section_paragraphs = get_section_paragraphs(section, section_titles, section_title_orig, specific_summary_dir, index)
+
+                if (section_paragraphs != []):
+
+                    index += 1
+                    save_section_para(section_paragraphs, section_titles, section_title_orig, section, specific_summary_dir, index)
+    except:
+        pass

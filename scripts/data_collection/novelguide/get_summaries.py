@@ -143,57 +143,60 @@ f_book_errors = open("book_errors.txt","w")
 
 # For each summary info
 for k, (title, page_url) in enumerate(summary_infos):
-    print('\n>>> {}. {} <<<'.format(k, title))
-
-    overview_found = 0
-
-    # Create a directory for the work if needed
-    specific_summary_dir = os.path.join(SUMMARY_DIR, title)
-
-    if not os.path.exists(specific_summary_dir):
-        os.makedirs(specific_summary_dir)
-    else:
-        print("Found existing directory.")
-        # continue
-
-    # Parse page
     try:
-        soup = BeautifulSoup(urllib.request.urlopen(page_url), "html.parser")
-    except urllib.error.HTTPError:
-        print ("HTTP error raised. Trying again")
-        time.sleep(10)
+        print('\n>>> {}. {} <<<'.format(k, title))
+
+        overview_found = 0
+
+        # Create a directory for the work if needed
+        specific_summary_dir = os.path.join(SUMMARY_DIR, title)
+
+        if not os.path.exists(specific_summary_dir):
+            os.makedirs(specific_summary_dir)
+        else:
+            print("Found existing directory.")
+            # continue
+
+        # Parse page
         try:
             soup = BeautifulSoup(urllib.request.urlopen(page_url), "html.parser")
         except urllib.error.HTTPError:
-            print ("Page not accessible: ", page_url)
+            print ("HTTP error raised. Trying again")
+            time.sleep(10)
+            try:
+                soup = BeautifulSoup(urllib.request.urlopen(page_url), "html.parser")
+            except urllib.error.HTTPError:
+                print ("Page not accessible: ", page_url)
+                f_book_errors.write(str(k) + "\t" + title + "\t" + page_url)
+                f_book_errors.write("\n")
+                continue
+
+        # # Parse general summary
+        navigation_links = soup.find("div", {"id": "block-booknavigation-3"})
+
+        #  Some links are just empty webpages
+        if navigation_links == None:
+            print ("Navigation links not found")
             f_book_errors.write(str(k) + "\t" + title + "\t" + page_url)
             f_book_errors.write("\n")
             continue
 
-    # # Parse general summary
-    navigation_links = soup.find("div", {"id": "block-booknavigation-3"})
+        section_links = [(urllib.parse.urljoin(MAIN_SITE, link.find("a").get("href")), link.text.strip()) for link in navigation_links.findAll("li")\
+         if 'chapter' in link.text.strip().lower() or 'summary' in link.text.strip().lower() or 'section' in link.text.strip().lower() or 'stave' in link.text.strip().lower() \
+         or 'chp' in link.text.strip().lower() or 'scene' in link.text.strip().lower() or 'act ' in link.text.strip().lower() \
+         or 'part' in link.text.strip().lower() or 'pages' in link.text.strip().lower() or 'lines' in link.text.strip().lower() \
+         or 'book' in link.text.strip().lower() or hasNumbers(link.text.strip().lower()) or 'overview' in link.text.strip().lower()\
+         or 'prologue' in link.text.strip().lower() or 'epilogue' in link.text.strip().lower()]
+         #Why not checking for the keyword 'summary'??
 
-    #  Some links are just empty webpages
-    if navigation_links == None:
-        print ("Navigation links not found")
-        f_book_errors.write(str(k) + "\t" + title + "\t" + page_url)
-        f_book_errors.write("\n")
-        continue
+        # Append index to all the section links
+        section_links_with_index = []
+        for index, (section, name) in enumerate(section_links):
+            section_links_with_index.append((index,(section, name), specific_summary_dir))
 
-    section_links = [(urllib.parse.urljoin(MAIN_SITE, link.find("a").get("href")), link.text.strip()) for link in navigation_links.findAll("li")\
-     if 'chapter' in link.text.strip().lower() or 'summary' in link.text.strip().lower() or 'section' in link.text.strip().lower() or 'stave' in link.text.strip().lower() \
-     or 'chp' in link.text.strip().lower() or 'scene' in link.text.strip().lower() or 'act ' in link.text.strip().lower() \
-     or 'part' in link.text.strip().lower() or 'pages' in link.text.strip().lower() or 'lines' in link.text.strip().lower() \
-     or 'book' in link.text.strip().lower() or hasNumbers(link.text.strip().lower()) or 'overview' in link.text.strip().lower()\
-     or 'prologue' in link.text.strip().lower() or 'epilogue' in link.text.strip().lower()]
-     #Why not checking for the keyword 'summary'??
-
-    # Append index to all the section links
-    section_links_with_index = []
-    for index, (section, name) in enumerate(section_links):
-        section_links_with_index.append((index,(section, name), specific_summary_dir))
-
-    if len(section_links_with_index) == 0:
-        print ("No section summaries found")
-    else:
-        get_section_level_data(section_links_with_index)
+        if len(section_links_with_index) == 0:
+            print ("No section summaries found")
+        else:
+            get_section_level_data(section_links_with_index)
+    except:
+        pass

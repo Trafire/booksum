@@ -241,34 +241,36 @@ def get_section_paragraphs(page_url, specific_summary_dir):
 
 # For each summary info
 for k, (title, page_url) in enumerate(summary_infos):
-    print('\n>>> {}. {} - {} <<<'.format(k, title, page_url))
-
-    # Create a directory for the work if needed
-    specific_summary_dir = os.path.join(SUMMARY_DIR, title)
-    if not os.path.exists(specific_summary_dir):
-        os.makedirs(specific_summary_dir)
-    else:
-        print("Found existing directory, skipping.")
-        # continue
-
-    # Parse page
     try:
-        soup = BeautifulSoup(urllib.request.urlopen(page_url), "html.parser")
-    except URLError as err:
-        print (err, "Retrying after sleep")
-        time.sleep(10)
+        print('\n>>> {}. {} - {} <<<'.format(k, title, page_url))
+
+        # Create a directory for the work if needed
+        specific_summary_dir = os.path.join(SUMMARY_DIR, title)
+        if not os.path.exists(specific_summary_dir):
+            os.makedirs(specific_summary_dir)
+        else:
+            print("Found existing directory, skipping.")
+            # continue
+
+        # Parse page
         try:
             soup = BeautifulSoup(urllib.request.urlopen(page_url), "html.parser")
+        except URLError as err:
+            print (err, "Retrying after sleep")
+            time.sleep(10)
+            try:
+                soup = BeautifulSoup(urllib.request.urlopen(page_url), "html.parser")
+            except Exception as e:
+                print (page_url, e)
+                f_errors.write(page_url + "\t" + str(e))
+                f_errors.write("\n")
+                continue
         except Exception as e:
-            print (page_url, e)
-            f_errors.write(page_url + "\t" + str(e))
-            f_errors.write("\n")
+            print ("page not found: ", e)
             continue
-    except Exception as e:
-        print ("page not found: ", e)
-        continue
-            
-    get_section_paragraphs(page_url, specific_summary_dir)
 
-    
+        get_section_paragraphs(page_url, specific_summary_dir)
+
+    except:
+        pass
 

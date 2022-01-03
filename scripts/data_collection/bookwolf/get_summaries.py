@@ -140,47 +140,49 @@ def get_section_paragraphs(section_links, specific_summary_dir):
 
 # For each summary info
 for k, (title, page_url) in enumerate(summary_infos):
-
-    print('\n>>> {}. {} <<<'.format(k, title))
-
-    # Create a directory for the work if needed
-    specific_summary_dir = os.path.join(SUMMARY_DIR, title)
-    if not os.path.exists(specific_summary_dir):
-        os.makedirs(specific_summary_dir)
-    else:
-        print("Found existing directory.")
-        # continue
-
-    # Parse page
-    print ("page_url: ", page_url)
     try:
-        soup = BeautifulSoup(urllib.request.urlopen(page_url), "html.parser")
-    except Exception as e:
-        print (page_url, e)
-        f_errors.write(str(k) + "\t" + title + "\t" + page_url + "\t" + specific_summary_dir + "\n")
-        continue
+
+        print('\n>>> {}. {} <<<'.format(k, title))
+
+        # Create a directory for the work if needed
+        specific_summary_dir = os.path.join(SUMMARY_DIR, title)
+        if not os.path.exists(specific_summary_dir):
+            os.makedirs(specific_summary_dir)
+        else:
+            print("Found existing directory.")
+            # continue
+
+        # Parse page
+        print ("page_url: ", page_url)
+        try:
+            soup = BeautifulSoup(urllib.request.urlopen(page_url), "html.parser")
+        except Exception as e:
+            print (page_url, e)
+            f_errors.write(str(k) + "\t" + title + "\t" + page_url + "\t" + specific_summary_dir + "\n")
+            continue
 
 
-    # Parse general summary
-    navigation_links = soup.find("table", {"id": "Table56"})
-    if navigation_links == None:
-        navigation_links = soup.find("td", {"class": "TextObject"})
-    overview_links = [(urllib.parse.urljoin(MAIN_SITE, link.get("href")), link.text) for link in navigation_links.findAll("a")\
-     if ("part" not in link.text.lower() and ("context" in link.get("href") or "summary" in link.get("href") or "synopsis" in link.get("href") ))]
+        # Parse general summary
+        navigation_links = soup.find("table", {"id": "Table56"})
+        if navigation_links == None:
+            navigation_links = soup.find("td", {"class": "TextObject"})
+        overview_links = [(urllib.parse.urljoin(MAIN_SITE, link.get("href")), link.text) for link in navigation_links.findAll("a")\
+         if ("part" not in link.text.lower() and ("context" in link.get("href") or "summary" in link.get("href") or "synopsis" in link.get("href") ))]
 
-    # Filter out some of the links that are obviously not chapter summary links
-    # Since this source only has a handful of books, it was easy to hard code which links to fetch summaries from
-    section_links = [(urllib.parse.urljoin(MAIN_SITE, link.get("href")), link.text) for link in navigation_links.findAll("a") \
-    if  ("interpretation" not in link.text.lower() and "comment" not in link.text.lower() and "author" not in link.text.lower()\
-    and "character" not in link.text.lower() and "questions" not in link.text.lower() and "life at the time" not in link.text.lower()\
-    and "theme" not in link.text.lower() and "foreword" not in link.text.lower() and "background" not in link.text.lower()\
-    and "symbolism" not in link.text.lower() and "introduction" not in link.text.lower() and "characterization" not in link.text.lower()\
-    and "setting" not in link.text.lower() and "family life" not in link.text.lower() and "comment" not in link.text.lower() \
-    and "context" not in link.text.lower() ) ]
-    
-    if len(overview_links) != 0:
-        get_overview_paragraphs(overview_links, specific_summary_dir)
+        # Filter out some of the links that are obviously not chapter summary links
+        # Since this source only has a handful of books, it was easy to hard code which links to fetch summaries from
+        section_links = [(urllib.parse.urljoin(MAIN_SITE, link.get("href")), link.text) for link in navigation_links.findAll("a") \
+        if  ("interpretation" not in link.text.lower() and "comment" not in link.text.lower() and "author" not in link.text.lower()\
+        and "character" not in link.text.lower() and "questions" not in link.text.lower() and "life at the time" not in link.text.lower()\
+        and "theme" not in link.text.lower() and "foreword" not in link.text.lower() and "background" not in link.text.lower()\
+        and "symbolism" not in link.text.lower() and "introduction" not in link.text.lower() and "characterization" not in link.text.lower()\
+        and "setting" not in link.text.lower() and "family life" not in link.text.lower() and "comment" not in link.text.lower() \
+        and "context" not in link.text.lower() ) ]
 
-    if len(section_links) != 0:
-        get_section_paragraphs(section_links, specific_summary_dir)
+        if len(overview_links) != 0:
+            get_overview_paragraphs(overview_links, specific_summary_dir)
 
+        if len(section_links) != 0:
+            get_section_paragraphs(section_links, specific_summary_dir)
+    except:
+        pass
